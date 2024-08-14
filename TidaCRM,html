@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8">
+    <title>Hoán đơn</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        @page {
+            margin: 0;
+            size: auto;
+        }
+
+        body {
+            background: rgb(204, 204, 204);
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        hr {
+            margin: 5px 0;
+            /* Giảm margin trên và dưới của các đường kẻ ngang */
+        }
+
+        p {
+            margin-bottom: 2px;
+            /* Giảm margin dưới của các đoạn văn */
+        }
+
+        table {
+            margin-bottom: 5px;
+            /* Giảm margin dưới của các bảng */
+        }
+
+        #content {
+            background: white;
+            width: 230mm;
+            min-height: 297mm;
+            padding: 5mm;
+            margin: 10mm auto;
+            box-shadow: 0 0 0.5cm rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+
+        .header-table {
+            width: 100%;
+        }
+
+        .logo-cell {
+            width: 20%;
+            text-align: center;
+        }
+
+        .title-cell {
+            width: 60%;
+            text-align: center;
+        }
+
+        .header-table .title-cell b {
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        .responsive-table th {
+            font-weight: 600;
+
+        }
+
+        .logo,
+        .qr-code {
+            max-width: 100px;
+        }
+
+        .responsive-table {
+            width: 100%;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .responsive-table th,
+        .responsive-table td {
+            padding: 2px;
+            line-height: 1.2;
+            word-break: break-word;
+        }
+
+        #setup-print {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 200px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        #setup-print select,
+        #setup-print button {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        #setup-print button:last-child {
+            margin-bottom: 0;
+        }
+
+        .product-info-line {
+            margin-bottom: 5px;
+        }
+
+        .product-info-line strong {
+            font-weight: bold;
+        }
+
+        @media print {
+            body {
+                background: none;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            #content {
+                box-shadow: none;
+                width: 100% !important;
+                margin: 0;
+                padding: 0;
+                min-height: auto;
+            }
+
+            #setup-print {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 21cm) {
+            #content {
+                width: 100%;
+                height: 100%;
+            }
+
+            .responsive-table,
+            .header-table {
+                font-size: 10pt;
+            }
+
+            .logo,
+            .qr-code {
+                max-width: 60px;
+            }
+        }
+
+        @media (max-width: 14.8cm) {
+
+            .responsive-table,
+            .header-table {
+                font-size: 8pt;
+            }
+
+            .logo,
+            .qr-code {
+                max-width: 50px;
+            }
+        }
+
+        @media (max-width: 10.5cm) {
+
+            .responsive-table,
+            .header-table {
+                font-size: 6pt;
+            }
+
+            .logo-cell {
+                display: none;
+            }
+
+            .title-cell {
+                width: 100%;
+            }
+        }
+
+        .strikethrough {
+            text-decoration: line-through;
+        }
+
+        body[data-paper-size^="thermal-"] {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body[data-paper-size="thermal-80"] #content {
+            width: 80mm;
+        }
+
+        body[data-paper-size="thermal-58"] #content {
+            width: 58mm;
+        }
+
+        body[data-paper-size^="thermal-"] .qr-cell img,
+        body[data-paper-size^="thermal-"] .logo-cell img {
+            max-width: 60px;
+            width: 100%;
+            height: auto;
+        }
+
+        body[data-paper-size^="thermal-"] .title-cell {
+            width: 100%;
+            font-size: 8px;
+        }
+
+        body[data-paper-size^="thermal-"] .responsive-table {
+            font-size: 8px;
+        }
+
+        #custom-size-inputs {
+            display: none;
+        }
+
+        #custom-size-inputs input {
+            width: 45%;
+            display: inline-block;
+        }
+
+        #qrCodeContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #qrcode img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        #accountInfo {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+
+        .thermal-table {
+            display: none;
+        }
+
+        .regular-table {
+            display: table;
+        }
+
+        body[data-paper-size^="thermal-"] .thermal-table {
+            display: table;
+        }
+
+        body[data-paper-size^="thermal-"] .regular-table {
+            display: none;
+        }
+
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading-screen"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.8); display: flex; justify-content: center; align-items: center; z-index: 9999;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Đang tải...</span>
+        </div>
+    </div>
+    <div id="setup-print">
+        <select id="select-paper-size" class="form-control mb-2">
+            <option value="A4">A4</option>
+            <option value="A5">A5</option>
+            <option value="A6">A6</option>
+            <option value="A7">A7</option>
+            <option value="thermal-80" selected>Máy in nhiệt 80mm</option>
+            <option value="thermal-58">Máy in nhiệt 58mm</option>
+            <option value="custom">Kích thước tùy chỉnh</option>
+        </select>
+        <div id="custom-size-inputs" class="mb-2">
+            <input type="number" id="custom-width" placeholder="Chiều rộng (mm)" class="form-control mb-2">
+            <input type="number" id="custom-height" placeholder="Chiều cao (mm)" class="form-control">
+        </div>
+        <select id="select-paper-orientation" class="form-control mb-2">
+            <option value="portrait">Dọc</option>
+            <option value="landscape">Ngang</option>
+        </select>
+        <select id="paymentMethod" class="form-control mb-2" onchange="updatePaymentMethod()">
+            <option value="cash">Tiền mặt</option>
+            <option value="transfer">Chuyển khoản</option>
+        </select>
+        <select id="accountSelect" class="form-control mb-2" style="display: none;" onchange="updateAccountInfo()">
+            <option value="vcb">VCB: 9917565435 - Chủ TK: LE CAO THAI</option>
+            <option value="acb">ACB: 25123168 - Chủ TK: CONG TY TNHH LAVIBA</option>
+        </select>
+        <button onclick="printDocument()" class="btn btn-info mb-2">
+            <i class="fa fa-print"></i> In
+        </button>
+        <button onclick="exportToPDF()" class="btn btn-primary">
+            <i class="fa fa-file-pdf"></i> Xuất PDF
+        </button>
+    </div>
+    <div id="content">
+        <table class="header-table">
+            <tr>
+
+                <td class="title-cell">
+                    <p><b>HÓA ĐƠN BÁN HÀNG</b></p>
+                    <p>Số HĐ: <span id="sodh"></span></p>
+                    <p>Ngày: <span id="ngay"></span></p>
+                </td>
+
+            </tr>
+        </table>
+        <hr>
+        <table class="responsive-table">
+            <tr>
+                <th>Khách hàng: <span id="tenkh"></span></th>
+            </tr>
+            <tr>
+                <th>Số điện thoại: 0343284375</th>
+            </tr>
+            <tr>
+                <th>Địa chỉ: <span id="chinhanh"></span></th>
+            </tr>
+        </table>
+        <hr>
+        <table class="responsive-table regular-table">
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>Tên sản phẩm</th>
+                    <th style="text-align: center;">Đơn giá</th>
+                    <th style="text-align: center;">SL</th>
+                    <th style="text-align: right;">Thành tiền</th>
+                </tr>
+            </thead>
+            <tbody id="orderDetailsBody">
+            </tbody>
+        </table>
+        <table class="responsive-table thermal-table">
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>Tên SP & SL</th>
+                    <th style="text-align: center;">Đơn giá</th>
+                    <th style="text-align: right;">Thành tiền</th>
+                </tr>
+            </thead>
+            <tbody id="thermalOrderDetailsBody">
+            </tbody>
+        </table>
+        <hr>
+        <table class="responsive-table">
+            <tr>
+                <th>Tổng đơn:</th>
+                <td><span id="tongGiaTri"></span></td>
+            </tr>
+            <tr>
+                <th>Giảm thêm:</th>
+                <td><span id="giamGia"></span></td>
+            </tr>
+            <tr>
+                <th>Thanh toán:</th>
+                <td colspan="3"><span id="khachcantra"></span></td>
+            </tr>
+            <tr>
+                <th>Khách dùng:</th>
+                <td>Chuyển khoản</td>
+            </tr>
+            <tr>
+                <th>Khách đưa:</th>
+                <td><span id="khachdatra"></span></td>
+            </tr>
+            <tr>
+                <th>Khách còn:</th>
+                <td colspan="3"><span id="conlai"></span></td>
+            </tr>
+        </table>
+        <i style="font-size: 10px;">(<span id="tongThanhToanBangChu"></span>)</i>
+        <div id="qrCodeContainer" style="display: none;">
+            <div id="qrcode"></div>
+            <p id="accountInfo"></p>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+        }, false);
+
+        document.onkeydown = function (e) {
+            if (e.keyCode == 123) {
+                return false;
+            }
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) {
+                return false;
+            }
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) {
+                return false;
+            }
+            if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) {
+                return false;
+            }
+        };
+
+        let devtools = function () { };
+        devtools.toString = function () {
+            this.opened = true;
+        };
+
+        setInterval(function () {
+            const heightThreshold = window.outerHeight - window.innerHeight > 200;
+            const widthThreshold = window.outerWidth - window.innerWidth > 200;
+
+            if (heightThreshold || widthThreshold || devtools.opened) {
+                document.body.innerHTML = 'Ăn cắp chất xám là hành vi độc hại, hãy tắt DevTools rồi tiếp tục sử dụng.';
+            }
+        }, 1000);
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzQfBPXhYiZ6lZeFTVXVAF8R90Eu290MR4DruUfdpWNAvqHOonfojfGXhvjxybkwfOX/exec';
+
+        var BAN_GIAO = {};
+        var CT_BANGIAO = [];
+
+        function showLoading() {
+            document.getElementById('loading-screen').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-screen').style.display = 'none';
+        }
+
+
+        function searchContract(SODH) {
+            showLoading();
+
+            fetch(`${API_URL}?SODH=${encodeURIComponent(SODH)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        BAN_GIAO = data.ctuResult || {};
+                        CT_BANGIAO = data.tsDetailResult || [];
+
+                        updateUI();
+
+
+                    } else {
+                        console.error('Lỗi:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Đã xảy ra lỗi:', error.message);
+                })
+                .finally(() => {
+                    hideLoading(); 
+                });
+            ;
+        }
+        function updateUI() {
+            document.getElementById('sodh').textContent = BAN_GIAO['Số đơn hàng'] || '';
+            document.getElementById('ngay').textContent = formatDate(BAN_GIAO['Ngày đặt hàng']) || '';
+            document.getElementById('tenkh').textContent = BAN_GIAO['Tên khách hàng'] || '';
+            document.getElementById('chinhanh').textContent = BAN_GIAO['Chi nhánh'] || '';
+            document.getElementById('tongGiaTri').textContent = formatCurrency(BAN_GIAO['Tổng tiền hàng'] || 0);
+            document.getElementById('giamGia').textContent = formatCurrency(BAN_GIAO['Giảm giá hóa đơn'] || "0");
+            document.getElementById('khachcantra').textContent = formatCurrency(BAN_GIAO['Khách cần trả'] || 0);
+            document.getElementById('khachdatra').textContent = formatCurrency(BAN_GIAO['Khách đã trả'] || 0);
+            document.getElementById('conlai').textContent = formatCurrency(BAN_GIAO['Còn lại'] || 0);
+            document.getElementById('tongThanhToanBangChu').textContent = `${numberToWords(BAN_GIAO['Tổng tiền hàng'] || 0)} đồng`;
+
+
+            updateProductTable(); updatePaymentMethod();
+
+        }
+
+
+        function updateProductTable() {
+            const tableBody = document.getElementById('orderDetailsBody');
+            const thermalTableBody = document.getElementById('thermalOrderDetailsBody');
+
+            tableBody.innerHTML = '';
+            thermalTableBody.innerHTML = '';
+
+            if (Array.isArray(CT_BANGIAO) && CT_BANGIAO.length > 0) {
+                CT_BANGIAO.forEach((item, index) => {
+                    const regularRow = tableBody.insertRow();
+                    regularRow.innerHTML = `
+                        <td class="center">${index + 1}</td>
+                        <td>${item['Tên hàng'] || ''}</td>
+                        <td style="text-align: center;">${formatCurrency(item['Giá bán'] || '')}</td>
+                        <td style="text-align: center;">${item['Số lượng'] || ''}</td>
+                        <td style="text-align: right;">${formatCurrency(item['Thành tiền'])}</td>
+                    `;
+
+                    const thermalRow = thermalTableBody.insertRow();
+                    thermalRow.innerHTML = `
+                        <td class="center">${index + 1}</td>
+                        <td><span style="font-weight: bold;">${item['Tên hàng'] || ''} </span> <br> <span style="display: inline-block; width: calc(100% - 15px); margin-left: 15px;"> ${item['Số lượng'] || ''}</span></td>
+                        <td style="text-align: center;"> <br> ${formatCurrency(item['Giá bán'] || '')} </td>
+                        <td style="text-align: right;"><br> ${formatCurrency(item['Thành tiền'])}</td>
+                    `;
+                });
+
+            } else {
+
+                tableBody.innerHTML = '<tr><td colspan="4">Không có dữ liệu</td></tr>';
+                thermalTableBody.innerHTML = '<tr><td colspan="3">Không có dữ liệu</td></tr>';
+            }
+
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const SODH = urlParams.get('SODH');
+            if (SODH) {
+                searchContract(SODH);
+            } else {
+                console.error('Vui lòng cung cấp số hợp đồng trong URL (ví dụ: ?SODH=HD001)');
+                hideLoading(); 
+            }
+
+        });
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = String(date.getFullYear());
+            return `${day}/${month}/${year}`;
+        }
+        function formatCurrency(value) {
+            if (!value) return '';
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+        }
+
+        function adjustQRCodeSize() {
+            const qrCodeElement = document.getElementById('qrcode');
+            if (qrCodeElement) {
+                const size = getQRCodeSize();
+                qrCodeElement.style.width = size;
+                qrCodeElement.style.height = size;
+                const qrImage = qrCodeElement.querySelector('img');
+                if (qrImage) {
+                    qrImage.style.width = size;
+                    qrImage.style.height = size;
+                }
+            }
+        }
+        function generateQRCode() {
+            const accountSelect = document.getElementById('accountSelect');
+            const selectedAccount = accountSelect.value;
+            const amountElement = document.getElementById('khachcantra');
+            const amount = parseFloat(amountElement.textContent.replace(/[^\d]/g, ''));
+
+            if (isNaN(amount)) {
+                console.error('Không thể lấy số tiền hợp lệ');
+                return;
+            }
+
+            let bankId, accountNo, accountName;
+            if (selectedAccount === 'vcb') {
+                bankId = '970436';
+                accountNo = '9917565435';
+                accountName = 'LE CAO THAI';
+            } else {
+                bankId = '970416';
+                accountNo = '25123168';
+                accountName = 'CONG TY TNHH LAVIBA';
+            }
+
+            const addInfo = `Thanh toan don hang ${document.getElementById('sodh').textContent}`;
+            const template = 'compact';
+
+            const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-${template}.png?amount=${amount}&addInfo=${encodeURIComponent(addInfo)}&accountName=${encodeURIComponent(accountName)}`;
+
+            const qrcode = document.getElementById('qrcode');
+            qrcode.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = qrUrl;
+            img.alt = 'QR Code for payment';
+            qrcode.appendChild(img);
+            document.getElementById('qrCodeContainer').style.display = 'flex';
+
+            adjustQRCodeSize();
+        }
+
+        function updatePageFormat() {
+            const size = document.getElementById('select-paper-size').value;
+            const orientation = document.getElementById('select-paper-orientation').value;
+            document.body.setAttribute('data-paper-size', size);
+            document.body.setAttribute('data-paper-orientation', orientation);
+
+            adjustContentSize(size, orientation);
+            adjustFontSize(size);
+            adjustImageSize(size);
+            adjustQRCodeSize(); // Thêm dòng này
+        }
+
+
+        function adjustContentSize(size, orientation) {
+            const content = document.getElementById('content');
+            let width, height;
+            switch (size) {
+                case 'A1': width = '594mm'; height = '841mm'; break;
+                case 'A2': width = '420mm'; height = '594mm'; break;
+                case 'A3': width = '297mm'; height = '420mm'; break;
+                case 'A4': width = '210mm'; height = '297mm'; break;
+                case 'A5': width = '148mm'; height = '210mm'; break;
+                case 'A6': width = '105mm'; height = '148mm'; break;
+                case 'A7': width = '74mm'; height = '105mm'; break;
+                case 'thermal-80': width = '80mm'; height = 'auto'; break;
+                case 'thermal-58': width = '58mm'; height = 'auto'; break;
+                case 'custom':
+                    width = document.getElementById('custom-width').value + 'mm';
+                    height = document.getElementById('custom-height').value + 'mm';
+                    break;
+                default: width = '210mm'; height = '297mm';
+            }
+            if (orientation === 'landscape') {
+                [width, height] = [height, width];
+            }
+            content.style.width = width;
+            content.style.minHeight = 'auto';
+            content.style.height = 'auto';
+            content.style.overflow = 'visible';
+        }
+
+        function adjustFontSize(size) {
+            const content = document.getElementById('content');
+            let fontSize;
+            switch (size) {
+                case 'A1': fontSize = '18px'; break;
+                case 'A2': fontSize = '16px'; break;
+                case 'A3': fontSize = '14px'; break;
+                case 'A4': fontSize = '12px'; break;
+                case 'A5': fontSize = '10px'; break;
+                case 'A6': fontSize = '9px'; break;
+                case 'A7': fontSize = '8px'; break;
+                case 'thermal-80': fontSize = '7px'; break;
+                case 'thermal-58': fontSize = '6px'; break;
+                case 'custom': fontSize = '12px'; break;
+                default: fontSize = '12px';
+            }
+            content.style.fontSize = fontSize;
+        }
+        function adjustImageSize(size) {
+            const logo = document.querySelector('.logo');
+            const qrCode = document.querySelector('.qr-code');
+            let imageSize;
+            switch (size) {
+                case 'A1': case 'A2': imageSize = '150px'; break;
+                case 'A3': imageSize = '120px'; break;
+                case 'A4': imageSize = '100px'; break;
+                case 'A5': imageSize = '80px'; break;
+                case 'A6': imageSize = '60px'; break;
+                case 'A7': imageSize = '40px'; break;
+                case 'thermal-80': imageSize = '60px'; break;
+                case 'thermal-58': imageSize = '60px'; break;
+                case 'custom': imageSize = '100px'; break;
+                default: imageSize = '100px';
+            }
+            if (logo) logo.style.maxWidth = imageSize;
+            if (qrCode) qrCode.style.maxWidth = imageSize;
+        }
+
+        function printDocument() {
+            updatePageFormat();
+            window.print();
+        }
+        function getQRCodeSize() {
+            const size = document.getElementById('select-paper-size').value;
+            const contentWidth = document.getElementById('content').offsetWidth;
+            let qrSize;
+
+            switch (size) {
+                case 'A4': qrSize = Math.min(128, contentWidth * 0.3); break;
+                case 'A5': qrSize = Math.min(100, contentWidth * 0.4); break;
+                case 'A6': qrSize = Math.min(80, contentWidth * 0.5); break;
+                case 'A7': qrSize = Math.min(60, contentWidth * 0.6); break;
+                case 'thermal-80': qrSize = Math.min(60, contentWidth * 0.7); break;
+                case 'thermal-58': qrSize = Math.min(50, contentWidth * 0.8); break;
+                case 'custom':
+                    qrSize = Math.min(contentWidth * 0.5, 128);
+                    break;
+                default: qrSize = Math.min(80, contentWidth * 0.4);
+            }
+            return `${Math.round(qrSize)}px`;
+        }
+
+        function exportToPDF() {
+            updatePageFormat();
+            const element = document.getElementById('content');
+            const size = document.getElementById('select-paper-size').value;
+            const orientation = document.getElementById('select-paper-orientation').value;
+
+            let format;
+            let isCustomSize = false;
+            switch (size) {
+                case 'A1': format = 'a1'; break;
+                case 'A2': format = 'a2'; break;
+                case 'A3': format = 'a3'; break;
+                case 'A4': format = 'a4'; break;
+                case 'A5': format = 'a5'; break;
+                case 'A6': format = 'a6'; break;
+                case 'A7': format = [74, 105]; break;
+                case 'thermal-80':
+                    format = [80, 250];
+                    isCustomSize = true;
+                    break;
+                case 'thermal-58':
+                    format = [58, 250];
+                    isCustomSize = true;
+                    break;
+                case 'custom':
+                    format = [
+                        parseFloat(document.getElementById('custom-width').value),
+                        parseFloat(document.getElementById('custom-height').value)
+                    ];
+                    isCustomSize = true;
+                    break;
+                default: format = 'a4';
+            }
+
+            const opt = {
+                margin: 0,
+                filename: 'test.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: true },
+                jsPDF: { unit: 'mm', format: format, orientation: orientation }
+            };
+
+            if (!isCustomSize) {
+                opt.pagebreak = { mode: ['avoid-all', 'css', 'legacy'] };
+            }
+
+            html2pdf().from(element).set(opt).save().catch(function (error) {
+         
+            });
+        }
+        function updatePaymentMethod() {
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const accountSelect = document.getElementById('accountSelect');
+            const qrCodeContainer = document.getElementById('qrCodeContainer');
+
+            if (paymentMethod === 'transfer') {
+                accountSelect.style.display = 'block';
+                updateAccountInfo();
+            } else {
+                accountSelect.style.display = 'none';
+                qrCodeContainer.style.display = 'none';
+            }
+        }
+
+        function updateAccountInfo() {
+            const accountSelect = document.getElementById('accountSelect');
+            const selectedAccount = accountSelect.options[accountSelect.selectedIndex];
+            const accountInfo = document.getElementById('accountInfo');
+            accountInfo.textContent = selectedAccount.text;
+
+            generateQRCode();
+        }
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const paymentMethodSelect = document.getElementById('paymentMethod');
+            const accountSelect = document.getElementById('accountSelect');
+            const paperSizeSelect = document.getElementById('select-paper-size');
+
+            if (paymentMethodSelect) {
+                paymentMethodSelect.addEventListener('change', updatePaymentMethod);
+            }
+
+            if (accountSelect) {
+                accountSelect.addEventListener('change', updateAccountInfo);
+            }
+
+            if (paperSizeSelect) {
+                paperSizeSelect.addEventListener('change', updatePageFormat);
+            }
+
+            updatePaymentMethod();
+            updatePageFormat();
+        });
+        document.addEventListener('DOMContentLoaded', function () {
+
+
+            const paperSizeSelect = document.getElementById('select-paper-size');
+            const customSizeInputs = document.getElementById('custom-size-inputs');
+
+            paperSizeSelect.addEventListener('change', function () {
+                if (this.value === 'custom') {
+                    customSizeInputs.style.display = 'block';
+                } else {
+                    customSizeInputs.style.display = 'none';
+                }
+                updatePageFormat();
+            });
+
+            document.getElementById('select-paper-orientation').addEventListener('change', updatePageFormat);
+            document.getElementById('custom-width').addEventListener('input', updatePageFormat);
+            document.getElementById('custom-height').addEventListener('input', updatePageFormat);
+
+            updatePageFormat();
+        });
+
+        function numberToWords(number) {
+            const units = ['', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+            const teens = ['mười', 'mười một', 'mười hai', 'mười ba', 'mười bốn', 'mười lăm', 'mười sáu', 'mười bảy', 'mười tám', 'mười chín'];
+            const tens = ['', '', 'hai mươi', 'ba mươi', 'bốn mươi', 'năm mươi', 'sáu mươi', 'bảy mươi', 'tám mươi', 'chín mươi'];
+            const scales = ['', 'nghìn', 'triệu', 'tỷ', 'nghìn tỷ', 'triệu tỷ'];
+
+            if (number === 0) return 'không';
+
+            function convertGroup(n) {
+                let result = '';
+                if (n >= 100) {
+                    result += units[Math.floor(n / 100)] + ' trăm ';
+                    n %= 100;
+                }
+                if (n >= 20) {
+                    result += tens[Math.floor(n / 10)] + ' ';
+                    n %= 10;
+                }
+                if (n >= 10) {
+                    result += teens[n - 10] + ' ';
+                } else if (n > 0) {
+                    result += units[n] + ' ';
+                }
+                return result.trim();
+            }
+
+            let result = '';
+            let scaleIndex = 0;
+            while (number > 0) {
+                const group = number % 1000;
+                if (group !== 0) {
+                    result = convertGroup(group) + ' ' + scales[scaleIndex] + ' ' + result;
+                }
+                number = Math.floor(number / 1000);
+                scaleIndex++;
+            }
+         
+            result = result.trim();
+            return result.charAt(0).toUpperCase() + result.slice(1);
+        }
+
+
+        function updateOrderDetails() {
+            const orderDetails = [
+                { name: "Sản phẩm A", price: 100000, quantity: 2 },
+                { name: "Sản phẩm B", price: 150000, quantity: 1 }
+              
+            ];
+
+            const regularTableBody = document.getElementById('orderDetailsBody');
+            const thermalTableBody = document.getElementById('thermalOrderDetailsBody');
+
+            regularTableBody.innerHTML = '';
+            thermalTableBody.innerHTML = '';
+
+            orderDetails.forEach(item => {
+                const total = item.price * item.quantity;
+
+                
+                const regularRow = regularTableBody.insertRow();
+                regularRow.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.price.toLocaleString('vi-VN')}đ</td>
+                    <td>${item.quantity}</td>
+                    <td>${total.toLocaleString('vi-VN')}đ</td>
+                `;
+
+                const thermalRow = thermalTableBody.insertRow();
+                thermalRow.innerHTML = `
+                    <td>${item.name} x${item.quantity}</td>
+                    <td>${item.price.toLocaleString('vi-VN')}đ</td>
+                    <td>${total.toLocaleString('vi-VN')}đ</td>
+                `;
+            });
+        }
+    </script>
+</body>
+
+</html>
